@@ -3,8 +3,8 @@
 #include <string.h>
 
 #define MAX_NAME_LENGTH 50
-#define MAX_SUBJECT_NAME_LENGTH 20
-#define MAX_ID_LENGTH 10
+#define MAX_SUBJECT_NAME_LENGTH 30
+#define MAX_ID_LENGTH 20
 
 typedef struct Subject {
     char name[MAX_SUBJECT_NAME_LENGTH];
@@ -26,6 +26,7 @@ void updateStudent(Student *head, const char *id);
 void deleteStudent(Student **head, const char *id);
 void freeList(Student *head);
 float calculateOverallGrade(const Subject *subjects);
+Subject* searchSubject(Subject *subjects, const char *name);
 
 void addStudent(Student **head) {
     Student *newStudent = (Student*)malloc(sizeof(Student));
@@ -122,7 +123,7 @@ void updateStudent(Student *head, const char *id) {
     int choice;
     printf("Update Student Information\n");
     printf("1. Update name\n");
-    printf("2. Update subjects and grades\n");
+    printf("2. Manage subjects\n");
     printf("Enter your choice: ");
     scanf("%d", &choice);
     getchar(); // Consume the newline character
@@ -131,45 +132,90 @@ void updateStudent(Student *head, const char *id) {
         printf("Enter new name: ");
         scanf(" %[^\n]", &student->name);
     } else if (choice == 2) {
-        Subject *currentSubject = student->subjects;
-        Subject *lastSubject = NULL;
-
-        // Free the current list of subjects
-        while (currentSubject) {
-            Subject *temp = currentSubject;
-            currentSubject = currentSubject->next;
-            free(temp);
-        }
-        student->subjects = NULL;
-
-        char subChoice;
+        int subChoice;
         do {
-            Subject *newSubject = (Subject*)malloc(sizeof(Subject));
-            if (!newSubject) {
-                printf("Memory allocation failed.\n");
-                return;
-            }
-            printf("Enter new subject name: ");
-            scanf(" %[^\n]", newSubject->name);
-            printf("Enter grade for %s: ", newSubject->name);
-            scanf("%f", &newSubject->grade);
-            newSubject->next = NULL;
-
-            if (lastSubject == NULL) {
-                student->subjects = newSubject;
-            } else {
-                lastSubject->next = newSubject;
-            }
-            lastSubject = newSubject;
-
-            printf("Do you want to add another subject? (y/n): ");
-            scanf(" %c", &subChoice);
+            printf("\nManage Subjects\n");
+            printf("1. Add new subject\n");
+            printf("2. Update existing subject\n");
+            printf("3. Remove subject\n");
+            printf("4. Done\n");
+            printf("Enter your choice: ");
+            scanf("%d", &subChoice);
             getchar(); // Consume the newline character
-        } while (subChoice == 'y' || subChoice == 'Y');
+
+            switch (subChoice) {
+                case 1: {
+                    Subject *newSubject = (Subject*)malloc(sizeof(Subject));
+                    if (!newSubject) {
+                        printf("Memory allocation failed.\n");
+                        return;
+                    }
+                    printf("Enter new subject name: ");
+                    scanf(" %[^\n]", newSubject->name);
+                    printf("Enter grade for %s: ", newSubject->name);
+                    scanf("%f", &newSubject->grade);
+                    newSubject->next = student->subjects;
+                    student->subjects = newSubject;
+                    break;
+                }
+                case 2: {
+                    printf("Enter subject name to update: ");
+                    char subjectName[MAX_SUBJECT_NAME_LENGTH];
+                    scanf(" %[^\n]", subjectName);
+                    Subject *subject = searchSubject(student->subjects, subjectName);
+                    if (subject) {
+                        printf("Enter updated grade for %s (current grade: %.2f): ", subject->name, subject->grade);
+                        scanf("%f", &subject->grade);
+                    } else {
+                        printf("Subject %s not found.\n", subjectName);
+                    }
+                    break;
+                }
+                case 3: {
+                    printf("Enter subject name to remove: ");
+                    char subjectName[MAX_SUBJECT_NAME_LENGTH];
+                    scanf(" %[^\n]", subjectName);
+                    Subject *current = student->subjects;
+                    Subject *previous = NULL;
+                    while (current && strcmp(current->name, subjectName) != 0) {
+                        previous = current;
+                        current = current->next;
+                    }
+                    if (current) {
+                        if (previous) {
+                            previous->next = current->next;
+                        } else {
+                            student->subjects = current->next;
+                        }
+                        free(current);
+                        printf("Subject %s removed.\n", subjectName);
+                    } else {
+                        printf("Subject %s not found.\n", subjectName);
+                    }
+                    break;
+                }
+                case 4:
+                    break; // Done with managing subjects
+                default:
+                    printf("Invalid choice. Please try again.\n");
+            }
+        } while (subChoice != 4);
     } else {
         printf("Invalid choice.\n");
     }
 }
+
+Subject* searchSubject(Subject *subjects, const char *name) {
+    Subject *current = subjects;
+    while (current) {
+        if (strcmp(current->name, name) == 0) {
+            return current;
+        }
+        current = current->next;
+    }
+    return NULL;
+}
+
 
 void deleteStudent(Student **head, const char *id) {
     Student *current = *head;
